@@ -112,12 +112,14 @@ impl<'a, I: Iterator> Iterator for OperandIter<'a, I>
     }
 }
 
-pub fn decode_instr<'a, I>(bytes: &'a mut I) -> (InstructionType, OperandIter<'a, I>)
+pub fn decode_instr<'a, I>(bytes: &'a mut I) -> Option<(InstructionType, OperandIter<'a, I>)>
     where I: Iterator<Item = u8>
 {
-    let instr = InstructionType::from_instrid(bytes).unwrap();
-
-    (instr, OperandIter::from_instr(instr, bytes))
+    if let Some(instr) = InstructionType::from_instrid(bytes) {
+        Some((instr, OperandIter::from_instr(instr, bytes)))
+    } else {
+        None
+    }
 }
 
 
@@ -139,7 +141,7 @@ mod tests {
         let op = vec![0x80, 0x8F, 0x02, 0x51];
         let iter = &mut op.iter().map(|x| *x);
 
-        let (instr, mut operiter) = decode_instr(iter);
+        let (instr, mut operiter) = decode_instr(iter).unwrap();
         assert_eq!(instr, InstructionType::ADDB2);
         assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Immediate8(2)), OperandWidth::Byte));
         assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Register(RegID(1))), OperandWidth::Byte));
@@ -150,7 +152,7 @@ mod tests {
         let op = vec![0xFF, 0xFE, 0x02, 0x00];
         let iter = &mut op.iter().map(|x| *x);
 
-        let (instr, mut operiter) = decode_instr(iter);
+        let (instr, mut operiter) = decode_instr(iter).unwrap();
         assert_eq!(instr, InstructionType::BUGW);
         assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::DataWord(2)), OperandWidth::Word));
     }
@@ -160,8 +162,20 @@ mod tests {
         let op = vec![0x04];
         let iter = &mut op.iter().map(|x| *x);
 
-        let (instr, mut operiter) = decode_instr(iter);
+        let (instr, mut operiter) = decode_instr(iter).unwrap();
         assert_eq!(instr, InstructionType::RET);
         assert_eq!(operiter.next(), None);
+    }
+
+    #[test]
+    fn decode_invalid() {
+        let op = vec![0xFF, 0xFF];
+        let iter = &mut op.iter().map(|x| *x);
+
+        if let Some(_) = decode_instr(iter) {
+            panic!("Decoded invalid successfully???");
+        } else {
+            
+        }
     }
 }
