@@ -1,0 +1,14 @@
+[package]
+name = "erodedvax"
+version = "0.1.0"
+authors = ["moonheart08 <moonheart08@users.noreply.github.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num = "^0.2"
+num-traits = "^0.2"
+num-derive = "^0.3"
+lru = "^0.4"
+bitfield = "^0.13"

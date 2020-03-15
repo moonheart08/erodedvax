@@ -1,0 +1,20 @@
+This document will refer often to the 1987 VAX Architecture Reference Manual.
+This will be shortened to "the VAX design manual" throughout this document.
+
+
+== Architectural subsets ==
+See page 373 of the VAX design manual for architectural subsets.
+The following subsets *must* be implemented for this to be considered a working emulator:
+    Kernel (For the most part. Can temporarily skip the OS instructions for simplicity's sake)
+    F_floating (maps to x86-64 32-bit floats)
+    G_floating (maps to x86-64 64-bit floats)
+    The following instructions:
+    `MOVTC`  
+    `MOVTUC`
+    `CMPC3`
+    `CMPC5`
+    `SCANC`
+    `SPANC`
+    `LOCC`
+    `SKPC`
+    `MATCHC`
