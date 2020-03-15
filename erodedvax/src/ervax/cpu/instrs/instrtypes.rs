@@ -609,9 +609,9 @@ impl InstructionType {
             BRW => FW_W,
             BSBB => FW_B,
             BSBW => FW_W,
-            CASEB => FW_BBB,
-            CASEW => FW_WWW,
-            CASEL => FW_LLL,
+            CASEB => &[OW::Byte, OW::Byte, OW::Byte, OW::Word],
+            CASEW => &[OW::Word, OW::Word, OW::Word, OW::Word],
+            CASEL => &[OW::Longword, OW::Longword, OW::Longword, OW::Word],
             JMP => FW_B,
             JSB => FW_B,
             RSB => FW_NONE,
@@ -640,5 +640,48 @@ impl InstructionType {
             REMQUE => FW_BL,
         }
             
+    }
+}
+
+
+mod tests {
+    use crate::ervax::cpu::{
+        instrs::{
+            OperandMode,
+            OperandParseError,
+            OperandWidth,
+            OperandIter,
+            InstructionType,
+            decode_instr,
+        },
+        RegID,
+    };
+
+    #[test]
+    /// Tests to make sure field_modes and field_widths return the same length arrays for all instructions
+    fn all_operand_list_lens_equal() {
+
+        for i in 0..252 {
+            let v = vec![i as u8];
+            let iter = &mut (v.iter().map(|x| *x));
+            if let Some(i) = InstructionType::from_instrid(iter) {
+                if i.field_widths().len() != i.field_modes().len() {
+                    panic!("Instruction {:?} has mismatched field modes/width lengths!", i);
+                }
+            }
+        }
+
+        for i in 252..256 {
+            for j in 0..256 {
+                let v = vec![i as u8, j as u8];
+                let v = vec![i as u8];
+                let iter = &mut (v.iter().map(|x| *x));
+                if let Some(i) = InstructionType::from_instrid(iter) {
+                    if i.field_widths().len() != i.field_modes().len() {
+                        panic!("Instruction {:?} has mismatched field modes/width lengths!", i);
+                    }
+                }
+            }
+        }
     }
 }
