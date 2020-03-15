@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 
 pub struct VAXBus {
     ram: Vec<u8>, // System RAM,

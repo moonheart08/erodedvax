@@ -1,12 +1,9 @@
-use lru::LruCache;
-use std::convert::TryInto;
-use num_traits::{FromPrimitive, ToPrimitive};
+
 use num_derive::*;
 
 use crate::ervax::{
     cpu::{
-        PrivilegeMode,
-        sysclk::SystemClock
+        PrivilegeMode
     },
     utils::addr_lw_trim,
 };

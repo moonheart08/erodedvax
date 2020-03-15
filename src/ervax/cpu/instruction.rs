@@ -4,6 +4,7 @@ use num_traits::{FromPrimitive, ToPrimitive};
 
 use crate::ervax::cpu::{RegID};
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OperandWidth {
     Byte, // u8
     Word, // 16
@@ -12,6 +13,7 @@ pub enum OperandWidth {
     Octaword, // u128
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OperandMode {
     Literal(u8),
     Register(RegID),
@@ -47,6 +49,7 @@ impl OperandMode {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OperandParseError {
     OutOfBytes,
     InvalidMode,
@@ -79,7 +82,7 @@ pub fn get_u64_from_stream<I>(bytes: &mut I) -> Option<u64>
 {
     let mut e: [u8; 8] = [0; 8];
     let d: Vec<u8> = bytes.take(8).collect();
-    if d.len() != 4 { return None }
+    if d.len() != 8 { return None }
     let c = &d[..e.len()];
     e.copy_from_slice(c); 
     Some(u64::from_le_bytes(e))
@@ -97,7 +100,7 @@ pub fn get_u128_from_stream<I>(bytes: &mut I) -> Option<u128>
 }
 
 impl OperandMode {
-    pub fn read_operand<I>(bytes: &mut I, width: OperandWidth) -> Result<OperandMode, OperandParseError>
+    pub fn read_operand<I>(bytes: &mut I, width: OperandWidth, allow_indexed: bool) -> Result<OperandMode, OperandParseError>
         where I: Iterator<Item = u8>
     {
         
@@ -114,32 +117,21 @@ impl OperandMode {
             return match optype {
                 0..=3 => unreachable!(), // Caught earlier. OperandMode::Literal
                 4 => {
-                    let mut bytes = bytes.peekable();
-                    // Indexed mode, aka pain.
-                    match bytes.peek() {
-                        Some(v) if ((v & 0xF0) >>4) == 4 => {
-                            // Someone tried to do OperandMode::Indexed powered recursion.
-                            // This check ruins their hopes and dreams.
-                            Err(OperandParseError::InvalidMode)
-                        }
-                        Some(_) => {
-                            // And this is why the above check exists.
-                            let submode = OperandMode::read_operand::<std::iter::Peekable<&mut I>>(&mut bytes, width);
+                    if !allow_indexed {
+                        return Err(OperandParseError::InvalidMode);
+                    }
 
-                            match submode {
-                                Err(v) => {
-                                    Err(v)
-                                },
-                                Ok(op) if op.is_valid_indexed() => {
-                                    Ok(OperandMode::Indexed(Box::new(op)))
-                                }
-                                _ => {
-                                    Err(OperandParseError::InvalidMode)
-                                }
-                            }
+                    let submode = OperandMode::read_operand::<I>(bytes, width, false);
+
+                    match submode {
+                        Err(v) => {
+                            Err(v)
+                        },
+                        Ok(op) if op.is_valid_indexed() => {
+                            Ok(OperandMode::Indexed(Box::new(op)))
                         }
-                        None => {
-                            Err(OperandParseError::OutOfBytes)
+                        _ => {
+                            Err(OperandParseError::InvalidMode)
                         }
                     }
                 }
@@ -499,7 +491,6 @@ pub enum InstructionType {
     REMQUE = 0x0F,
 }
 
-/// GENERATED instruction field modes
 impl InstructionType {
     pub fn from_instrid(instr: [u8;2]) -> Option<Self> {
         match instr[0] {
@@ -660,5 +651,154 @@ impl InstructionType {
             REMQTI => FM_AW,
             REMQUE => FM_AW,
         }
+    }
+}
+
+mod tests {
+    use crate::ervax::cpu::instruction::{
+        OperandMode,
+        OperandParseError,
+        OperandWidth,
+    };
+
+    use crate::ervax::cpu::RegID;
+    #[test] 
+    fn decode_literal() {
+        let literal: Vec<u8> = vec![0x02];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::Literal(2)));
+    }
+
+    #[test] 
+    fn decode_register() {
+        let literal: Vec<u8> = vec![0x55];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::Register(RegID(5))));
+    }
+
+    #[test] 
+    fn decode_deferred_register() {
+        let literal: Vec<u8> = vec![0x65];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::RegisterDeferred(RegID(5))));
+    }
+
+    #[test] 
+    fn decode_immediate8() {
+        let literal: Vec<u8> = vec![0x8F, 0x02];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::Immediate8(2)));
+    }
+
+    #[test] 
+    fn decode_immediate16() {
+        let mut literal: Vec<u8> = vec![0x8F];
+        let mut x: Vec<u8> = (&(2 as u16).to_le_bytes())[..].into();
+        literal.append(&mut x);
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Word, true);
+        assert_eq!(r, Ok(OperandMode::Immediate16(2)));
+    }
+
+    #[test] 
+    fn decode_immediate32() {
+        let mut literal: Vec<u8> = vec![0x8F];
+        let mut x: Vec<u8> = (&(2 as u32).to_le_bytes())[..].into();
+        literal.append(&mut x);
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Longword, true);
+        assert_eq!(r, Ok(OperandMode::Immediate32(2)));
+    }
+
+    #[test] 
+    fn decode_immediate64() {
+        let mut literal: Vec<u8> = vec![0x8F];
+        let mut x: Vec<u8> = (&(2 as u64).to_le_bytes())[..].into();
+        literal.append(&mut x);
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Quadword, true);
+        assert_eq!(r, Ok(OperandMode::Immediate64(2)));
+    }
+
+    #[test] 
+    fn decode_immediate128() {
+        let mut literal: Vec<u8> = vec![0x8F];
+        let mut x: Vec<u8> = (&(2 as u128).to_le_bytes())[..].into();
+        literal.append(&mut x);
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Octaword, true);
+        assert_eq!(r, Ok(OperandMode::Immediate128(2)));
+    }
+
+    #[test]
+    fn decode_autoincrement() {
+        let literal: Vec<u8> = vec![0x85];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::AutoIncrement(RegID(5))));
+    }
+
+    #[test]
+    fn decode_autoincrement_deferred() {
+        let literal: Vec<u8> = vec![0x95];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::AutoIncrementDeferred(RegID(5))));
+    }
+
+    #[test]
+    fn decode_absolute() {
+        let mut literal: Vec<u8> = vec![0x9F];
+        let mut x: Vec<u8> = (&(0x1234_5678 as u32).to_le_bytes())[..].into();
+        literal.append(&mut x);
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Ok(OperandMode::Absolute(0x1234_5678)));
+    }
+
+    // -----
+    // Operand decoding failure tests
+    // -----
+
+    #[test]
+    fn doubly_indexed() {
+        let literal: Vec<u8> = vec![0x40, 0x40];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Err(OperandParseError::InvalidMode));
+    }
+
+    #[test] 
+    fn decode_immediate8_not_enough_bytes() {
+        let literal: Vec<u8> = vec![0x8F];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Err(OperandParseError::OutOfBytes));
+    }
+
+    #[test]
+    fn decode_no_bytes() {
+        let literal: Vec<u8> = vec![];
+        let iter = &mut literal.iter().map(|x| *x);
+
+        let r = OperandMode::read_operand(iter, OperandWidth::Byte, true);
+        assert_eq!(r, Err(OperandParseError::OutOfBytes));
     }
 }
