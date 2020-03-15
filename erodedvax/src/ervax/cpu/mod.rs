@@ -1,5 +1,5 @@
 pub mod regfile;
-pub mod instruction;
+pub mod instrs;
 pub mod mmu;
 pub mod sysclk;
 pub mod bus;
