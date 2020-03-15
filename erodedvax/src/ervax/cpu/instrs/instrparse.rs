@@ -54,8 +54,7 @@ impl<'a, I: Iterator> Iterator for OperandIter<'a, I>
 
     fn next(&mut self) -> Option<Self::Item> {
         let curfield = self.field_id as usize;
-        let curwidth = self.fw[curfield];
-
+        
         if self.done {
             return None;
         }
@@ -64,6 +63,8 @@ impl<'a, I: Iterator> Iterator for OperandIter<'a, I>
             self.done = true;
             return None;
         }
+
+        let curwidth = self.fw[curfield];
 
         match self.fm[curfield] {
             FieldMode::Data => {
@@ -76,13 +77,13 @@ impl<'a, I: Iterator> Iterator for OperandIter<'a, I>
                     }
                     OperandWidth::Word => {
                         match get_u16_from_stream(self.bytes) {
-                            Some(v) => return Some((Ok(OperandMode::Immediate16(v)), curwidth)),
+                            Some(v) => return Some((Ok(OperandMode::DataWord(v)), curwidth)),
                             None => return Some((Err(OperandParseError::OutOfBytes), curwidth)),
                         }
                     }
                     OperandWidth::Longword => {
                         match get_u32_from_stream(self.bytes) {
-                            Some(v) => return Some((Ok(OperandMode::Immediate32(v)), curwidth)),
+                            Some(v) => return Some((Ok(OperandMode::DataLong(v)), curwidth)),
                             None => return Some((Err(OperandParseError::OutOfBytes), curwidth)),
                         }
                     }
@@ -134,13 +135,33 @@ mod tests {
     };
 
     #[test]
-    pub fn decode_addl2() {
-        let op = vec![0xC0, 0x50, 0x51];
+    fn decode_addl2_imm_reg() {
+        let op = vec![0x80, 0x8F, 0x02, 0x51];
         let iter = &mut op.iter().map(|x| *x);
 
         let (instr, mut operiter) = decode_instr(iter);
-        assert_eq!(instr, InstructionType::ADDL2);
-        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Register(RegID(0))), OperandWidth::Longword));
-        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Register(RegID(1))), OperandWidth::Longword));
+        assert_eq!(instr, InstructionType::ADDB2);
+        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Immediate8(2)), OperandWidth::Byte));
+        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Register(RegID(1))), OperandWidth::Byte));
+    }
+
+    #[test]
+    fn decode_bugw() {
+        let op = vec![0xFF, 0xFE, 0x02, 0x00];
+        let iter = &mut op.iter().map(|x| *x);
+
+        let (instr, mut operiter) = decode_instr(iter);
+        assert_eq!(instr, InstructionType::BUGW);
+        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::DataWord(2)), OperandWidth::Word));
+    }
+
+    #[test]
+    fn decode_ret() {
+        let op = vec![0x04];
+        let iter = &mut op.iter().map(|x| *x);
+
+        let (instr, mut operiter) = decode_instr(iter);
+        assert_eq!(instr, InstructionType::RET);
+        assert_eq!(operiter.next(), None);
     }
 }
