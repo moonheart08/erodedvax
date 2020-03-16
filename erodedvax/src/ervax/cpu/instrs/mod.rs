@@ -47,6 +47,7 @@ pub enum OperandMode {
 }
 
 impl OperandMode {
+    #[inline]
     pub fn is_valid_indexed(&self) -> bool {
         use OperandMode::*;
         match self {
@@ -58,6 +59,7 @@ impl OperandMode {
         }
     }
 
+    #[inline]
     pub fn is_valid_in_fieldmode(&self, mode: FieldMode) -> bool {
         use OperandMode::*;
         match mode {
@@ -94,6 +96,7 @@ pub enum OperandParseError {
     InvalidMode,
 }
 
+#[inline]
 pub fn get_u16_from_stream<I>(bytes: &mut I) -> Option<u16>
     where I: Iterator<Item = u8>
 {
@@ -105,6 +108,7 @@ pub fn get_u16_from_stream<I>(bytes: &mut I) -> Option<u16>
     Some(u16::from_le_bytes(e))
 }
 
+#[inline]
 pub fn get_u32_from_stream<I>(bytes: &mut I) -> Option<u32>
     where I: Iterator<Item = u8>
 {
@@ -116,6 +120,7 @@ pub fn get_u32_from_stream<I>(bytes: &mut I) -> Option<u32>
     Some(u32::from_le_bytes(e))
 }
 
+#[inline]
 pub fn get_u64_from_stream<I>(bytes: &mut I) -> Option<u64>
     where I: Iterator<Item = u8>
 {
@@ -127,6 +132,7 @@ pub fn get_u64_from_stream<I>(bytes: &mut I) -> Option<u64>
     Some(u64::from_le_bytes(e))
 }
 
+#[inline]
 pub fn get_u128_from_stream<I>(bytes: &mut I) -> Option<u128>
     where I: Iterator<Item = u8>
 {
@@ -152,6 +158,8 @@ impl OperandMode {
             let optype = (head & 0xF0) >> 4;
             let field = (head & 0x0F) >> 0;
             let reg = RegID(field);
+
+            assert!(optype > 3);
 
             return match optype {
                 0..=3 => unreachable!(), // Caught earlier. OperandMode::Literal

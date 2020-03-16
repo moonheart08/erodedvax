@@ -11,22 +11,21 @@ use crate::ervax::cpu::instrs::{
 pub struct OperandIter<'a, I: Iterator> 
     where I: Iterator<Item = u8>
 {
-    field_id: u32,
+    field_id: u8,
     fm: &'static [FieldMode],
     fw: &'static [OperandWidth],
-    done: bool,
     bytes: &'a mut I,
 }
 
 impl<'a, I: Iterator> OperandIter<'a, I> 
     where I: Iterator<Item = u8>
 {
+    #[inline]
     pub fn from_instr<'b>(inst: InstructionType, bytes: &'b mut I) -> OperandIter<'b, I> {
         OperandIter {
             field_id: 0,
             fm: inst.field_modes(),
             fw: inst.field_widths(),
-            done: false,
             bytes,
         }
     }
@@ -36,55 +35,68 @@ impl<'a, I: Iterator> OperandIter<'a, I>
             field_id: 0,
             fm,
             fw,
-            done: false,
             bytes,
         }
     }
 
     /// Consumes the OperandIter and returns the bytes iter it was created with, and the field it was on.
-    pub fn destructure(self) -> (&'a mut I, u32) {
+    #[inline]
+    pub fn destructure(self) -> (&'a mut I, u8) {
         return (self.bytes, self.field_id);
+    }
+
+    #[inline(always)]
+    pub fn is_done(&self) -> bool {
+        self.field_id == 255
+    }
+
+    #[inline(always)]
+    pub fn set_done(&mut self) {
+        self.field_id = 255;
     }
 }
 
 impl<'a, I: Iterator> Iterator for OperandIter<'a, I>
     where I: Iterator<Item = u8>
 {
-    type Item = (Result<OperandMode, OperandParseError>, OperandWidth);
+    type Item = Result<OperandMode, OperandParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let curfield = self.field_id as usize;
-        
-        if self.done {
+
+        if self.is_done() {
             return None;
         }
 
         if curfield >= self.fm.len() {
-            self.done = true;
+            self.set_done();
             return None;
         }
 
-        let curwidth = self.fw[curfield];
+        let curfm = unsafe { *self.fm.get_unchecked(curfield) };
+        let curfw = unsafe { *self.fw.get_unchecked(curfield) };
 
-        match self.fm[curfield] {
+        self.field_id += 1;
+
+        match curfm {
             FieldMode::Data => {
-                match self.fw[curfield] {
+                match curfw {
                     OperandWidth::Byte => {
                         if let Some(next) = self.bytes.next() {
-                            return Some((Ok(OperandMode::DataByte(next)), curwidth));
+                            return Some(Ok(OperandMode::DataByte(next)));
                         }
-                        return Some((Err(OperandParseError::OutOfBytes), curwidth));
+                        return Some(Err(OperandParseError::OutOfBytes));
                     }
                     OperandWidth::Word => {
                         match get_u16_from_stream(self.bytes) {
-                            Some(v) => return Some((Ok(OperandMode::DataWord(v)), curwidth)),
-                            None => return Some((Err(OperandParseError::OutOfBytes), curwidth)),
+                            Some(v) => return Some(Ok(OperandMode::DataWord(v))),
+                            None => return Some(Err(OperandParseError::OutOfBytes)),
                         }
                     }
                     OperandWidth::Longword => {
                         match get_u32_from_stream(self.bytes) {
-                            Some(v) => return Some((Ok(OperandMode::DataLong(v)), curwidth)),
-                            None => return Some((Err(OperandParseError::OutOfBytes), curwidth)),
+                            Some(v) => return Some(Ok(OperandMode::DataLong(v))),
+                            None => return Some(Err(OperandParseError::OutOfBytes)),
                         }
                     }
                     _ => unimplemented!("Quadword and Octaword data width was not needed at time of implementation")
@@ -94,18 +106,17 @@ impl<'a, I: Iterator> Iterator for OperandIter<'a, I>
                 return None;
             },
             v => {
-                let opres = OperandMode::read_operand(self.bytes, curwidth, true);
+                let opres = OperandMode::read_operand(self.bytes, curfw, true);
 
-                self.field_id += 1;
                 if let Ok(om) = opres 
                 {
                     if om.is_valid_in_fieldmode(v) {
-                        return Some((Ok(om), curwidth));
+                        return Some(Ok(om));
                     } else {
-                        return Some((Err(OperandParseError::InvalidMode), curwidth));
+                        return Some(Err(OperandParseError::InvalidMode));
                     }
                 } else {
-                    return Some((opres, curwidth));
+                    return Some(opres);
                 }
             }
         }
@@ -137,14 +148,14 @@ mod tests {
     };
 
     #[test]
-    fn decode_addl2_imm_reg() {
+    fn decode_addb2_imm_reg() {
         let op = vec![0x80, 0x8F, 0x02, 0x51];
         let iter = &mut op.iter().map(|x| *x);
 
         let (instr, mut operiter) = decode_instr(iter).unwrap();
         assert_eq!(instr, InstructionType::ADDB2);
-        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Immediate8(2)), OperandWidth::Byte));
-        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::Register(RegID(1))), OperandWidth::Byte));
+        assert_eq!(operiter.next().unwrap(), Ok(OperandMode::Immediate8(2)));
+        assert_eq!(operiter.next().unwrap(), Ok(OperandMode::Register(RegID(1))));
     }
 
     #[test]
@@ -154,7 +165,7 @@ mod tests {
 
         let (instr, mut operiter) = decode_instr(iter).unwrap();
         assert_eq!(instr, InstructionType::BUGW);
-        assert_eq!(operiter.next().unwrap(), (Ok(OperandMode::DataWord(2)), OperandWidth::Word));
+        assert_eq!(operiter.next().unwrap(), Ok(OperandMode::DataWord(2)));
     }
 
     #[test]
@@ -175,7 +186,7 @@ mod tests {
         if let Some(_) = decode_instr(iter) {
             panic!("Decoded invalid successfully???");
         } else {
-            
+
         }
     }
 }

@@ -1,5 +1,6 @@
-
 use num_derive::*;
+use num_traits::{FromPrimitive, ToPrimitive};
+
 
 use crate::ervax::{
     cpu::{
@@ -42,71 +43,40 @@ impl PTEProtectionCode {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MemoryAccessType {
-    None,
     Read,
     Write,
 }
 
 impl PTEProtectionCode {
-    pub fn can_access(self, mode: PrivilegeMode) -> MemoryAccessType {
-        match mode {
-            PrivilegeMode::Kernel => self.can_access_kernel(),
-            PrivilegeMode::Executive => self.can_access_executive(),
-            PrivilegeMode::Supervisor => self.can_access_supervisor(),
-            PrivilegeMode::User => self.can_access_user(),
-        }
-    }
+    pub fn can_access(self, mode: PrivilegeMode, access: MemoryAccessType) -> bool {
+        let m = self.to_u8().unwrap();
+        let rm = ((m & 0b1100) >> 2) as u8;
+        let wm = !(m & 0b0011) as u8;
 
-    fn can_access_kernel(self) -> MemoryAccessType {
-        use PTEProtectionCode::*;
-        match self {
-            NoAccess => MemoryAccessType::None,
-            ZeroPage | ExecR | SuperR | UserR | KernR => 
-                MemoryAccessType::Read,
-            _ => MemoryAccessType::Write,
-        }
-    }
 
-    fn can_access_executive(self) -> MemoryAccessType {
-        use PTEProtectionCode::*;
-        match self {
-            NoAccess | KernW | KernR => 
-                MemoryAccessType::None,
-            ZeroPage | ExecR | ExecRKernW | SuperR 
-            | SuperRKernW | UserRKernW | UserR => 
-                MemoryAccessType::Read,
-            UserW | ExecW | SuperW | SuperRExecW 
-            | UserRExecW | UserRSuperW => 
-                MemoryAccessType::Write,
-        }
-    }
-    fn can_access_supervisor(self) -> MemoryAccessType {
-        use PTEProtectionCode::*;
-        match self {
-            NoAccess | KernW | KernR | ExecW | ExecRKernW | ExecR => 
-                MemoryAccessType::None,
-            ZeroPage | SuperR | SuperRExecW | SuperRKernW 
-            | UserRKernW | UserRExecW | UserR => 
-                MemoryAccessType::Read,
-            UserW | SuperW | UserRSuperW => MemoryAccessType::Write,
-        }
-    }
-    fn can_access_user(self) -> MemoryAccessType {
-        use PTEProtectionCode::*;
-        match self {
-            NoAccess | KernW | KernR | ExecW | ExecRKernW 
-            | ExecR | SuperR | SuperRExecW | SuperRKernW | SuperW => 
-                MemoryAccessType::None,
-            ZeroPage | UserR | UserRExecW | UserRKernW | UserRSuperW => 
-                MemoryAccessType::Read,
-            UserW => MemoryAccessType::Write,
+        match mode.to_u8().unwrap() {
+            16..=u8::MAX => unreachable!(),
+
+            0 => false,
+            4 => true,
+
+            v if v < wm => {
+                true
+            },
+
+            v if (access == MemoryAccessType::Read) && (v <= rm)  => {
+                true
+            },
+
+            _ => false,
+
         }
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PFN(u32);
 
 impl From<u32> for PFN {
@@ -115,35 +85,8 @@ impl From<u32> for PFN {
     }
 }
 
-// the GPTX format is not supported yet.
-// Supporting it will allow non-kernel privilege levels
-// to safely let external IO devices read/write virtually addressed memory
-// Not top priority.
-// The system can still parse it, but will trigger an error if it's use is attempted.
-pub enum PTE {
-    ValidPTE {
-        prot: PTEProtectionCode,
-        modify: bool,
-        pfn: PFN,
-    },
-
-    ValidPTENoUse {
-        prot: PTEProtectionCode,
-        pfn: PFN,
-    },
-
-    GPTXPTE {
-        prot: PTEProtectionCode,
-        owner: u8,
-        pfn: PFN,
-    },
-
-    InvalidPTE {},
-}
 
 pub struct VAXMMU {
-    enabled: bool,
-
     /// P0BR
     p0_base: u32,
     /// P0LR
@@ -164,7 +107,6 @@ pub struct VAXMMU {
 impl VAXMMU {
     pub fn new() -> Self {
         VAXMMU {
-            enabled: false,
             p0_base: 0,
             p0_len: 0,
             p1_base: 0,
@@ -223,8 +165,6 @@ impl VAXMMU {
     /// Checks an address for validity
     /// See page 209 of the VAX Architecture Reference Manual (1987)
     pub fn is_address_valid(&self, addr: u32) -> bool {
-        if !self.enabled && (VAXMMU::address_region(addr) == 0) { return true; }
-
         let region = VAXMMU::address_region(addr); 
         let maddr = addr & 0x3FFF_F800;
         
@@ -245,7 +185,6 @@ impl VAXMMU {
     /// Gets the physical address of the PTE used to translate the input.
     /// Returns None if address is invalid or MMU is disabled
     pub fn get_pte_address(&self, translatee: u32) -> Option<u32> {
-        if !self.enabled { return None; }
         if !self.is_address_valid(translatee) { return None; }
 
         let pfn: PFN = translatee.into();
@@ -260,26 +199,6 @@ impl VAXMMU {
             _ => None,
         }
     }
-
-    pub fn parse_pte(pte: u32) -> PTE {
-        let valid = ((pte & 0x8000_0000) >> 31) != 0;
-        let protr = (pte & 0x7800_0000) >> 27;
-        let modify = ((pte & 0x0400_0000) >> 26) != 0;
-
-        let prot: PTEProtectionCode = PTEProtectionCode::from_int(protr as u8).unwrap();
-
-        let pfn: PFN = (pte & 0x001F_FFFF).into();
-
-        if valid {
-            return PTE::ValidPTE {
-                prot,
-                modify,
-                pfn,
-            };
-        }
-
-        unimplemented!();
-    }
 }
 
 mod tests {
@@ -289,7 +208,4 @@ mod tests {
         assert_eq!(VAXMMU::address_region(0x0000_0000), 0);
         assert_eq!(VAXMMU::address_region(0xC000_0000), 3);
     }
-
-
-
 }

@@ -72,7 +72,7 @@ pub enum InstructionType {
     DIVL3 = 0xC7,
 
     EDIV = 0x7B,
-    EMUL = 0x74,
+    EMUL = 0x7A,
 
     INCB = 0x96,
     INCW = 0xB6,
@@ -233,15 +233,157 @@ pub enum InstructionType {
 
     XFC = 0xFC,
 
+    // Queue instructions
+
     INSQHI = 0x5C,
     INSQTI = 0x5D,
     INSQUE = 0x0E, // Why are the queue instructions in the major 252 instructions? 
     REMQHI = 0x5E, // They'd be better put in one of the 3 extension prefixes...
     REMQTI = 0x5F,
     REMQUE = 0x0F,
+
+    //Floating point
+
+    ADDF2 = 0x40,
+    ADDF3 = 0x41,
+    ADDD2 = 0x60, // Unsupported
+    ADDD3 = 0x61, // Unsupported
+    ADDG2 = 0x40FD,
+    ADDG3 = 0x41FD,
+    ADDH2 = 0x60FD, // Unsupported
+    ADDH3 = 0x61FD, // Unsupported
+
+    CMPF = 0x51,
+    CMPD = 0x71, // Unsupported
+    CMPG = 0x51FD,
+    CMPH = 0x71FD, // Unsupported
+
+    // Floating point convert instructions.
+
+    CVTBF = 0x4C,
+    CVTWF = 0x4D,
+    CVTLF = 0x4E,
+
+    CVTBD = 0x6C, // Unsupported
+    CVTWD = 0x6D, // Unsupported
+    CVTLD = 0x6E, // Unsupported
+
+    CVTBG = 0x4CFD,
+    CVTWG = 0x4DFD,
+    CVTLG = 0x4EFD,
+
+    CVTBH = 0x6CFD, // Unsupported
+    CVTWH = 0x6DFD, // Unsupported
+    CVTLH = 0x6EFD, // Unsupported
+
+    CVTFB = 0x48,
+    CVTFW = 0x49,
+    CVTFL = 0x4A,
+    CVTRFL = 0x4B,
+
+    CVTDB = 0x68, // Unsupported
+    CVTDW = 0x69, // Unsupported
+    CVTDL = 0x6A, // Unsupported
+    CVTRDL = 0x6B, // Unsupported
+
+    CVTGB = 0x48FD,
+    CVTGW = 0x49FD,
+    CVTGL = 0x4AFD,
+    CVTRGL = 0x4BFD,
+
+    CVTHB = 0x68FD, // Unsupported
+    CVTHW = 0x69FD, // Unsupported
+    CVTHL = 0x6AFD, // Unsupported
+    CVTRHL = 0x6BFD, // Unsupported
+
+    CVTFD = 0x56, // Unsupported
+    CVTFG = 0x99FD,
+    CVTFH = 0x98FD, // Unsupported
+
+    CVTDF = 0x76, // Unsupported
+    CVTDH = 0x32FD, // Unsupported
+
+    CVTGF = 0x33FD,
+    CVTGH = 0x56FD, // Unsupported
+
+    CVTHF = 0xF6FD, // Unsupported
+    CVTHD = 0xF7FD, // Unsupported
+    CVTHG = 0x76FD, // Unsupported
+
+    // Rest of floating point.
+
+    DIVF2 = 0x46,
+    DIVF3 = 0x47,
+    DIVD2 = 0x66, // Unsupported
+    DIVD3 = 0x67, // Unsupported
+    DIVG2 = 0x46FD,
+    DIVG3 = 0x47FD,
+    DIVH2 = 0x66FD, // Unsupported
+    DIVH3 = 0x67FD, // Unsupported
+
+    EMODF = 0x54,
+    EMODD = 0x74, // Unsupported
+    EMODG = 0x54FD,
+    EMODH = 0x74FD, // Unsupported
+
+    MNEGF = 0x52,
+    MNEGD = 0x72, // Unsupported
+    MNEGG = 0x52FD,
+    MNEGH = 0x72FD, // Unsupported
+
+    MOVF = 0x50,
+    MOVD = 0x70, // Unsupported
+    MOVG = 0x50FD,
+    MOVH = 0x70FD, // Unsupported
+
+    MULF2 = 0x44,
+    MULF3 = 0x45,
+    MULD2 = 0x64, // Unsupported
+    MULD3 = 0x65, // Unsupported
+    MULG2 = 0x44FD,
+    MULG3 = 0x45FD,
+    MULH2 = 0x64FD, // Unsupported
+    MULH3 = 0x65FD, // Unsupported
+
+    POLYF = 0x55, // All POLY instructions are unimplemented for now. Not top priority.
+    POLYD = 0x75, // Unsupported
+    POLYG = 0x55FD,
+    POLYH = 0x75FD, // Unsupported
+
+    SUBF2 = 0x42,
+    SUBF3 = 0x43,
+    SUBD2 = 0x62, // Unsupported
+    SUBD3 = 0x63, // Unsupported
+    SUBG2 = 0x42FD,
+    SUBG3 = 0x43FD,
+    SUBH2 = 0x62FD, // Unsupported
+    SUBH3 = 0x63FD, // Unsupported
+
+    TSTF = 0x53,
+    TSTD = 0x73,
+    TSTG = 0x53FD,
+    TSTH = 0x73FD,
+    
+    /// Instructions for exceptions and interrupts.
+    
+    REI = 0x02,
+
+    CHMK = 0xBC,
+    CHME = 0xBD,
+    CHMS = 0xBE,
+    CHMU = 0xBF,
+
+    /// Instructions for processes.
+
+    LDPCTX = 0x06,
+    SVPCTX = 0x07,
+
+    MTPR = 0xDA,
+    MFPR = 0xDB,
 }
 
 impl InstructionType {
+    #[inline]
     pub fn from_instrid<I>(bytes: &mut I) -> Option<Self> 
         where I: Iterator<Item = u8>
     {
@@ -261,6 +403,7 @@ impl InstructionType {
         }
     }
 
+    #[inline]
     pub fn field_count(self) -> u32 {
         // don't repeat yourself.
         self.field_modes().len() as u32
@@ -281,18 +424,16 @@ impl InstructionType {
             &[FieldMode::Modify];
         const FM_A: &'static [FieldMode] =
             &[FieldMode::Address];
-        const FM_BB: &'static [FieldMode] =
-            &[FieldMode::Data];
-        const FM_BW: &'static [FieldMode] =
+        const FM_D: &'static [FieldMode] =
             &[FieldMode::Data];
         const FM_BL: &'static [FieldMode] =
             &[FieldMode::Data];
 
         const FM_RR: &'static [FieldMode] =
             &[FieldMode::Read, FieldMode::Read];
-        const FM_RBB: &'static [FieldMode] =
+        const FM_RD: &'static [FieldMode] =
             &[FieldMode::Read, FieldMode::Data];
-        const FM_MBB: &'static [FieldMode] =
+        const FM_MD: &'static [FieldMode] =
             &[FieldMode::Modify, FieldMode::Data];
         const FM_RM: &'static [FieldMode] = 
             &[FieldMode::Read, FieldMode::Modify];
@@ -307,9 +448,11 @@ impl InstructionType {
 
         const FM_RRW: &'static [FieldMode] = 
             &[FieldMode::Read, FieldMode::Read, FieldMode::Write];
-        const FM_RMBB: &'static [FieldMode] = 
+        const FM_RRA: &'static [FieldMode] = 
+            &[FieldMode::Read, FieldMode::Read, FieldMode::Address];
+        const FM_RMD: &'static [FieldMode] = 
             &[FieldMode::Read, FieldMode::Modify, FieldMode::Data];
-        const FM_RVBB: &'static [FieldMode] = 
+        const FM_RVD: &'static [FieldMode] = 
             &[FieldMode::Read, FieldMode::Bitfield, FieldMode::Data];
 
         const FM_RRWW: &'static [FieldMode] = 
@@ -323,8 +466,11 @@ impl InstructionType {
         const FM_RRRV: &'static [FieldMode] = 
             &[FieldMode::Read, FieldMode::Read, FieldMode::Read, FieldMode::Bitfield];
 
-        const FM_RRMBW: &'static [FieldMode] = 
+        const FM_RRMD: &'static [FieldMode] = 
             &[FieldMode::Read, FieldMode::Read, FieldMode::Modify, FieldMode::Data];
+
+        const FM_RRRWW: &'static [FieldMode] =
+            &[FieldMode::Read, FieldMode::Read, FieldMode::Read, FieldMode::Write, FieldMode::Write];
 
         const FM_RRRRRW: &'static [FieldMode] =
             &[FieldMode::Read, FieldMode::Read, FieldMode::Read, FieldMode::Read, FieldMode::Read, FieldMode::Write];
@@ -373,30 +519,30 @@ impl InstructionType {
             EXTV | EXTZV => FM_RRVW,
             FFC | FFS => FM_RRVW,
             INSV => FM_RRRV,
-            ACBB | ACBW | ACBL | ACBF | ACBD | ACBG | ACBH => FM_RRMBW,
-            AOBLEQ => FM_RMBB,
-            AOBLSS => FM_RMBB,
+            ACBB | ACBW | ACBL | ACBF | ACBD | ACBG | ACBH => FM_RRMD,
+            AOBLEQ => FM_RMD,
+            AOBLSS => FM_RMD,
             BGTR | BLEQ | BNEQ | BEQL | BGEQ | BLSS 
-            | BGTRU | BLEQU | BVC | BVS | BCC | BCS => FM_BB,
-            BBS | BBC => FM_RVBB,
-            BBSS | BBCS | BBSC | BBCC => FM_RVBB,
-            BBSSI | BBCCI => FM_RVBB,
-            BLBS | BLBC => FM_RBB,
-            BRB | BSBB => FM_BB,
-            BRW | BSBW => FM_BW,
+            | BGTRU | BLEQU | BVC | BVS | BCC | BCS => FM_D,
+            BBS | BBC => FM_RVD,
+            BBSS | BBCS | BBSC | BBCC => FM_RVD,
+            BBSSI | BBCCI => FM_RVD,
+            BLBS | BLBC => FM_RD,
+            BRB | BSBB => FM_D,
+            BRW | BSBW => FM_D,
             CASEB | CASEW | CASEL => FM_CASE,
             JMP => FM_A,
             JSB => FM_A,
             RSB => FM_NONE,
-            SOBGEQ => FM_MBB,
-            SOBGTR => FM_MBB,
+            SOBGEQ => FM_MD,
+            SOBGTR => FM_MD,
             CALLG => FM_AA,
             CALLS => FM_RA,
             RET => FM_NONE,
             BICPSW => FM_R,
             BISPSW => FM_R,
             BPT => FM_NONE,
-            BUGW => FM_BW,
+            BUGW => FM_D,
             BUGL => FM_BL,
             HALT => FM_NONE,
             INDEX => FM_RRRRRW,
@@ -411,6 +557,32 @@ impl InstructionType {
             REMQHI => FM_AW,
             REMQTI => FM_AW,
             REMQUE => FM_AW,
+            ADDF2 | ADDD2 | ADDG2 | ADDH2 => FM_RM,
+            ADDF3 | ADDD3 | ADDG3 | ADDH3 => FM_RRW,
+            CMPF | CMPD | CMPG | CMPH => FM_RR,
+            // oh god
+            CVTBF | CVTWF | CVTLF | CVTBD | CVTWD | CVTLD | CVTBG | CVTWG | CVTLG
+            | CVTBH | CVTWH | CVTLH | CVTFB | CVTFW | CVTFL | CVTRFL | CVTDB | CVTDW
+            | CVTDL | CVTRDL | CVTGB | CVTGW | CVTGL | CVTRGL | CVTHB | CVTHW | CVTHL
+            | CVTFD | CVTFG | CVTFH | CVTDF | CVTDH | CVTGF | CVTGH
+            | CVTHF | CVTHD | CVTHG | CVTRHL => FM_RW,
+            DIVF2 | DIVD2 | DIVG2 | DIVH2 => FM_RM,
+            DIVF3 | DIVD3 | DIVG3 | DIVH3 => FM_RRW,
+            EMODF | EMODD | EMODG | EMODH => FM_RRRWW,
+            MNEGF | MNEGD | MNEGG | MNEGH => FM_RW,
+            MOVF | MOVD | MOVG | MOVH => FM_RW,
+            MULF2 | MULD2 | MULG2 | MULH2 => FM_RM,
+            MULF3 | MULD3 | MULG3 | MULH3 => FM_RRW,
+            POLYF | POLYD | POLYG | POLYH => FM_RRA,
+            SUBF2 | SUBD2 | SUBG2 | SUBH2 => FM_RM,
+            SUBF3 | SUBD3 | SUBG3 | SUBH3 => FM_RRW,
+            TSTF | TSTD | TSTG | TSTH => FM_R,
+            REI => FM_NONE,
+            CHMK | CHME | CHMS | CHMU => FM_R,
+            LDPCTX => FM_NONE,
+            SVPCTX => FM_NONE,
+            MTPR => FM_RR,
+            MFPR => FM_RW,
         }
     }
 
@@ -434,26 +606,59 @@ impl InstructionType {
         
         const FW_BB: &'static [OperandWidth] = 
             &[OW::Byte, OW::Byte];
+        const FW_BW: &'static [OperandWidth] = 
+            &[OW::Byte, OW::Word];
         const FW_BL: &'static [OperandWidth] = 
             &[OW::Byte, OW::Longword];
         const FW_BQ: &'static [OperandWidth] = 
             &[OW::Byte, OW::Quadword];
+        const FW_BO: &'static [OperandWidth] = 
+            &[OW::Byte, OW::Octaword];
+        
+        const FW_WB: &'static [OperandWidth] = 
+            &[OW::Word, OW::Byte];
         const FW_WW: &'static [OperandWidth] = 
             &[OW::Word, OW::Word];
         const FW_WL: &'static [OperandWidth] = 
             &[OW::Word, OW::Longword];
-        const FW_LL: &'static [OperandWidth] = 
-            &[OW::Longword, OW::Longword];
+        const FW_WQ: &'static [OperandWidth] = 
+            &[OW::Word, OW::Quadword];
+        const FW_WO: &'static [OperandWidth] = 
+            &[OW::Word, OW::Quadword];
+        
         const FW_LB: &'static [OperandWidth] = 
             &[OW::Longword, OW::Byte];
-        const FW_QQ: &'static [OperandWidth] = 
-            &[OW::Quadword, OW::Quadword];
+        const FW_LW: &'static [OperandWidth] = 
+            &[OW::Longword, OW::Word];
+        const FW_LL: &'static [OperandWidth] = 
+            &[OW::Longword, OW::Longword];
+        const FW_LQ: &'static [OperandWidth] = 
+            &[OW::Longword, OW::Quadword];
+        const FW_LO: &'static [OperandWidth] = 
+            &[OW::Longword, OW::Octaword];
+        
+        const FW_QB: &'static [OperandWidth] = 
+            &[OW::Quadword, OW::Byte];
+        const FW_QW: &'static [OperandWidth] = 
+            &[OW::Quadword, OW::Word];
         const FW_QL: &'static [OperandWidth] = 
             &[OW::Quadword, OW::Longword];
-        const FW_OO: &'static [OperandWidth] = 
-            &[OW::Octaword, OW::Octaword];
+        const FW_QQ: &'static [OperandWidth] = 
+            &[OW::Quadword, OW::Quadword];
+        const FW_QO: &'static [OperandWidth] = 
+            &[OW::Quadword, OW::Octaword];
+        
+        const FW_OB: &'static [OperandWidth] = 
+            &[OW::Octaword, OW::Byte];
+        const FW_OW: &'static [OperandWidth] = 
+            &[OW::Octaword, OW::Word];
         const FW_OL: &'static [OperandWidth] = 
             &[OW::Octaword, OW::Longword];
+        const FW_OQ: &'static [OperandWidth] = 
+            &[OW::Octaword, OW::Longword];
+        const FW_OO: &'static [OperandWidth] = 
+            &[OW::Octaword, OW::Octaword];
+
 
         const FW_BBB: &'static [OperandWidth] = 
             &[OW::Byte, OW::Byte, OW::Byte];
@@ -469,6 +674,10 @@ impl InstructionType {
             &[OW::Longword, OW::Longword, OW::Byte];
         const FW_LBB: &'static [OperandWidth] = 
             &[OW::Longword, OW::Byte, OW::Byte];
+        const FW_QQQ: &'static [OperandWidth] = 
+            &[OW::Quadword, OW::Quadword, OW::Quadword];
+        const FW_OOO: &'static [OperandWidth] = 
+            &[OW::Octaword, OW::Octaword, OW::Octaword];
 
         const FW_LLBB: &'static [OperandWidth] =
             &[OW::Longword, OW::Longword, OW::Byte, OW::Byte];
@@ -638,8 +847,82 @@ impl InstructionType {
             REMQHI => FW_QL,
             REMQTI => FW_QL,
             REMQUE => FW_BL,
+            ADDF2 => FW_LL,
+            ADDF3 => FW_LLL,
+            ADDD2 => FW_QQ,
+            ADDD3 => FW_QQQ,
+            ADDG2 => FW_QQ,
+            ADDG3 => FW_QQQ,
+            ADDH2 => FW_OO,
+            ADDH3 => FW_OOO,
+            CMPF => FW_LL,
+            CMPD => FW_QQ,
+            CMPG => FW_QQ,
+            CMPH => FW_OO,
+            // C V T AAAAA
+            CVTBF => FW_BL,
+            CVTWF => FW_WL,
+            CVTLF => FW_LL,
+            CVTBD | CVTBG => FW_BQ,
+            CVTWD | CVTWG => FW_WQ,
+            CVTLD | CVTLG => FW_LQ,
+            CVTBH => FW_BO,
+            CVTWH => FW_WO,
+            CVTLH => FW_LO,
+            CVTFB => FW_LB,
+            CVTFW => FW_LW,
+            CVTFL | CVTRFL => FW_LL,
+            CVTDB | CVTGB => FW_QB,
+            CVTDW | CVTGW => FW_QW,
+            CVTDL | CVTGL | CVTRDL | CVTRGL => FW_QL,
+            CVTHB => FW_OB,
+            CVTHW => FW_OW,
+            CVTHL | CVTRHL => FW_OL,
+            CVTFD | CVTFG => FW_LQ,
+            CVTFH => FW_LO,
+            CVTDF | CVTGF => FW_QL,
+            CVTDH | CVTGH => FW_QO,
+            CVTHF => FW_OL,
+            CVTHD | CVTHG => FW_OQ,
+            DIVF2 => FW_LL,
+            DIVF3 => FW_LLL,
+            DIVD2 | DIVG2 => FW_QQ,
+            DIVD3 | DIVG3 => FW_QQQ,
+            DIVH2 => FW_OO,
+            DIVH3 => FW_OOO,
+            EMODF => &[OW::Longword, OW::Byte, OW::Longword, OW::Longword, OW::Longword],
+            EMODD => &[OW::Quadword, OW::Byte, OW::Quadword, OW::Longword, OW::Quadword],
+            EMODG => &[OW::Quadword, OW::Word, OW::Quadword, OW::Longword, OW::Quadword],
+            EMODH => &[OW::Octaword, OW::Byte, OW::Octaword, OW::Octaword, OW::Octaword],
+            MNEGF => FW_LL,
+            MNEGD | MNEGG => FW_QQ,
+            MNEGH => FW_OO,
+            MOVF => FW_LL,
+            MOVD | MOVG => FW_QQ,
+            MOVH => FW_OO,
+            MULF2 => FW_LL,
+            MULF3 => FW_LLL,
+            MULD2 | MULG2 => FW_QQ,
+            MULD3 | MULG3 => FW_QQQ,
+            MULH2 => FW_OO,
+            MULH3 => FW_OOO,
+            POLYF => &[OW::Longword, OW::Word, OW::Byte],
+            POLYD | POLYG => &[OW::Quadword, OW::Word, OW::Byte],
+            POLYH => &[OW::Octaword, OW::Word, OW::Byte],
+            SUBF2 => FW_LL,
+            SUBF3 => FW_LLL,
+            SUBD2 | SUBG2 => FW_QQ,
+            SUBD3 | SUBG3 => FW_QQQ,
+            SUBH2 => FW_OO,
+            SUBH3 => FW_OOO,
+            TSTF => FW_L,
+            TSTD | TSTG => FW_Q,
+            TSTH => FW_O,
+            REI => FW_NONE,
+            CHMK | CHME | CHMS | CHMU => FW_W,
+            LDPCTX | SVPCTX => FW_NONE,
+            MFPR | MTPR => FW_LL,
         }
-            
     }
 }
 
