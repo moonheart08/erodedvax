@@ -11,7 +11,7 @@ pub trait VAXBusDevice {
 
 // Implementation detail. Should be replaced eventually, as it's not as efficient as i'd like and
 // significantly restricts memory layout.
-struct VAXBusPage {
+pub struct VAXBusPage {
     upper: u32, // Upper half of the address fed to the target device.
     device: u16, // The device, referenced by ID.
 }
@@ -23,3 +23,12 @@ pub struct VAXBus {
     bus_map: Vec<VAXBusPage>, // VERY inefficient.
 }
 
+impl VAXBus {
+    pub fn new(ram_size: usize, bus_map: Vec<VAXBusPage>) -> VAXBus {
+        VAXBus {
+            devices: vec![],
+            ram: vec![0; ram_size],
+            bus_map,
+        }
+    }
+}

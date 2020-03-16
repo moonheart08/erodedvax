@@ -1,6 +1,9 @@
+use num_traits::{FromPrimitive, ToPrimitive};
+
 use crate::ervax::cpu::{
     bus::VAXBus,
     mmu::VAXMMU,
+    PrivilegeMode,
 };
 
 /// An ExecutionContext is the enviornment within which the emulated system executes, and it handles
@@ -11,8 +14,6 @@ pub struct ExecutionContext {
 
     /// System Control Block Base.
     scbb: u32, 
-    /// Interrupt Priority Level.
-    ipl: u8, 
 
     /// Proess Control Block Base.
     pcbb: u32,
@@ -44,11 +45,98 @@ pub struct ExecutionContext {
     mmu: VAXMMU,
 }
 
+/// Getters and setters for the Processor Status Longword
+impl ExecutionContext {
+    #[inline]
+    fn get_psl_bit(&self, bit: u8) -> bool {
+        assert!(bit < 32);
+        let mask = 0x01 << bit;
+        
+        ((self.psl & mask) >> bit) != 0
+    }
 
+    #[inline]
+    fn set_psl_bit(&mut self, bit: u8, val: bool) {
+        assert!(bit < 32);
+        let mask = 0x01 << bit;
+        self.psl &= !mask;
+        self.psl |= (val as u32) << bit;
+    }
+
+    #[inline]
+    pub fn get_cur_priv_mode(&self) -> PrivilegeMode {
+        PrivilegeMode::from_u32((self.psl & 0x0180_0000) >> 23).unwrap()
+    }
+
+    #[inline]
+    pub fn set_cur_priv_mode(&mut self, m: PrivilegeMode) {
+        let x = (m.to_u32().unwrap() << 23) & 0x0180_0000;
+        self.psl &= !0x0180_0000;
+        self.psl |= x;
+    }
+
+    pub fn get_trace_pending(&self) -> bool {
+        self.get_psl_bit(30)
+    }
+
+    pub fn set_trace_pending(&mut self, val: bool) {
+        self.set_psl_bit(30, val)
+    }
+
+    pub fn get_fpd_pending(&self) -> bool {
+        self.get_psl_bit(27)
+    }
+
+    pub fn set_fpd_pending(&mut self, val: bool) {
+        self.set_psl_bit(27, val)
+    }
+
+    pub fn get_interrupt_stack(&self) -> bool {
+        self.get_psl_bit(26)
+    }
+
+    pub fn set_interrupt_stack(&mut self, val: bool) {
+        self.set_psl_bit(26, val)
+    }
+}
+
+/// Execution.
 impl ExecutionContext {
     /// Execute one step. Does not necessarily map to a single cycle.
     /// Usually takes however many cycles it needs to execute the next instruction.
     pub fn execute_step(&mut self) -> bool {
         unimplemented!()
+    }
+}
+
+/// Creating an ExecutionContext
+impl ExecutionContext {
+    pub fn new() -> ExecutionContext {
+        ExecutionContext {
+            halted: true,
+            scbb: 0,
+            pcbb: 0,
+            ksp: 0,
+            esp: 0,
+            ssp: 0,
+            usp: 0,
+            isp: 0,
+            psl: 0,
+            pc: 0,
+            gpr: [0; 14],
+            bus: VAXBus::new(524288, vec![]),
+            mmu: VAXMMU::new(),
+        }
+    }
+}
+
+mod tests {
+    use super::*;
+    #[test]
+    fn psl_get_set() {
+        let mut exec = ExecutionContext::new();
+        assert_eq!(exec.get_cur_priv_mode(), PrivilegeMode::Kernel);
+        exec.set_cur_priv_mode(PrivilegeMode::User);
+        assert_eq!(exec.get_cur_priv_mode(), PrivilegeMode::User);
     }
 }
