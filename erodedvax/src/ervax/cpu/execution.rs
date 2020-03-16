@@ -65,38 +65,94 @@ impl ExecutionContext {
 
     #[inline]
     pub fn get_cur_priv_mode(&self) -> PrivilegeMode {
-        PrivilegeMode::from_u32((self.psl & 0x0180_0000) >> 23).unwrap()
+        PrivilegeMode::from_u32((self.psl & 0x0300_0000) >> 24).unwrap()
     }
 
     #[inline]
     pub fn set_cur_priv_mode(&mut self, m: PrivilegeMode) {
-        let x = (m.to_u32().unwrap() << 23) & 0x0180_0000;
-        self.psl &= !0x0180_0000;
+        let x = (m.to_u32().unwrap() << 24) & 0x0300_0000;
+        self.psl &= !0x0300_0000;
         self.psl |= x;
     }
-
+    #[inline]
     pub fn get_trace_pending(&self) -> bool {
         self.get_psl_bit(30)
     }
-
+    #[inline]
     pub fn set_trace_pending(&mut self, val: bool) {
         self.set_psl_bit(30, val)
     }
-
-    pub fn get_fpd_pending(&self) -> bool {
+    #[inline]
+    pub fn get_first_part_done(&self) -> bool {
         self.get_psl_bit(27)
     }
-
-    pub fn set_fpd_pending(&mut self, val: bool) {
+    #[inline]
+    pub fn set_first_part_done(&mut self, val: bool) {
         self.set_psl_bit(27, val)
     }
-
+    #[inline]
     pub fn get_interrupt_stack(&self) -> bool {
         self.get_psl_bit(26)
     }
-
+    #[inline]
     pub fn set_interrupt_stack(&mut self, val: bool) {
         self.set_psl_bit(26, val)
+    }
+    #[inline]
+    pub fn get_decimal_overflow_enable(&self) -> bool {
+        self.get_psl_bit(7)
+    }
+    #[inline]
+    pub fn set_decimal_overflow_enable(&mut self, val: bool) {
+        self.set_psl_bit(7, val)
+    }
+    #[inline]
+    pub fn get_floating_underflow_enable(&self) -> bool {
+        self.get_psl_bit(6)
+    }
+    #[inline]
+    pub fn set_floating_underflow_enable(&mut self, val: bool) {
+        self.set_psl_bit(6, val)
+    }
+    #[inline]
+    pub fn get_integer_overflow_enable(&self) -> bool {
+        self.get_psl_bit(5)
+    }
+    #[inline]
+    pub fn set_integer_overflow_enable(&mut self, val: bool) {
+        self.set_psl_bit(5, val)
+    }
+    #[inline]
+    pub fn get_trace_enable(&self) -> bool {
+        self.get_psl_bit(4)
+    }
+    #[inline]
+    pub fn set_trace_enable(&mut self, val: bool) {
+        self.set_psl_bit(4, val)
+    }
+    #[inline]
+    pub fn get_negative(&self) -> bool {
+        self.get_psl_bit(3)
+    }
+    #[inline]
+    pub fn set_negative(&mut self, val: bool) {
+        self.set_psl_bit(3, val)
+    }
+    #[inline]
+    pub fn get_zero(&self) -> bool {
+        self.get_psl_bit(1)
+    }
+    #[inline]
+    pub fn set_zero(&mut self, val: bool) {
+        self.set_psl_bit(1, val)
+    }
+    #[inline]
+    pub fn get_carry(&self) -> bool {
+        self.get_psl_bit(0)
+    }
+    #[inline]
+    pub fn set_carry(&mut self, val: bool) {
+        self.set_psl_bit(0, val)
     }
 }
 
